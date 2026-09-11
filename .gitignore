@@ -1,0 +1,9 @@
+node_modules
+dist
+.dev.vars
+.env
+.env.local
+beyond-the-chatbot-prompt.md
+*.log
+.DS_Store
+.wrangler

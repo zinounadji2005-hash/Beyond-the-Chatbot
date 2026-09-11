@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars and fill in real values.
+# .dev.vars is gitignored — never commit real secrets.
+NVIDIA_API_KEY=your_nvidia_api_key_here
+NVIDIA_MODEL=nvidia/nemotron-3-ultra-550b-a55b
+SUPABASE_URL=https://yourproject.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key_here

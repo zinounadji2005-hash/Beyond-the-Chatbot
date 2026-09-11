@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Support Dashboard — what Beyond the Chatbot replaces</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f1f3f6; color: #1f2329; }
+  .topbar { background: #1a2a4a; color: #fff; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-weight: 700; letter-spacing: .5px; }
+  .brand small { font-weight: 400; color: #9fb3d8; margin-left: 8px; }
+  .user { background: #2d4070; border-radius: 999px; padding: 4px 12px; font-size: 12px; }
+  .notice { background: #fff3cd; border-bottom: 1px solid #ffe28a; color: #7a5c00; padding: 8px 20px; font-size: 12px; text-align: center; }
+  .toolbar { background: #fff; border-bottom: 1px solid #dde1e7; padding: 14px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .toolbar input[type="search"], .toolbar select { padding: 7px 10px; border: 1px solid #c9d0da; border-radius: 6px; font-size: 13px; background: #fff; }
+  .toolbar input[type="search"] { flex: 1; min-width: 220px; }
+  .stats { display: flex; gap: 8px; }
+  .stat { background: #f7f9fc; border: 1px solid #dde1e7; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #55606e; }
+  .stat b { color: #1f2329; }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+  thead th { background: #f7f9fc; color: #55606e; text-align: left; padding: 10px 14px; border-bottom: 1px solid #dde1e7; font-weight: 600; white-space: nowrap; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+  tbody tr:hover { background: #f4f8ff; }
+  .subj { max-width: 340px; color: #0f1320; }
+  .prio { border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 600; display: inline-block; }
+  .urgent { background: #fde8e8; color: #b3261e; }
+  .high   { background: #ffefd8; color: #b5520a; }
+  .medium { background: #fff7d6; color: #96720a; }
+  .low    { background: #eef1f5; color: #5b6470; }
+  .st-open { color: #b3261e; } .st-pending { color: #96720a; } .st-resolved { color: #1e7a3a; } .st-escalated { color: #7c3aed; }
+  .legend { padding: 10px 20px; font-size: 11px; color: #55606e; }
+  .legend span { margin-right: 14px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">SupportHub <small>ticket management console</small></div>
+    <div class="user">Agent: Jane D.</div>
+  </div>
+  <div class="notice">&#9888; Legacy control panel &mdash; the interface this project replaces. Same underlying tickets, surfaced one-at-a-time in the AI-native app.</div>
+
+  <div class="toolbar">
+    <input type="search" placeholder="Search tickets, customers, IDs&hellip;" />
+    <select><option>Priority: All</option><option>Urgent</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <select><option>Type: All</option><option>Billing</option><option>Refunds</option><option>Technical</option><option>Account</option><option>General</option></select>
+    <select><option>Status: All</option><option>Open</option><option>Pending</option><option>Escalated</option><option>Resolved</option></select>
+    <select><option>Assigned to: Anyone</option></select>
+    <div class="stats">
+      <span class="stat">Open <b id="sOpen"></b></span>
+      <span class="stat">Avg age <b>2.3d</b></span>
+      <span class="stat">SLA at risk <b>7</b></span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Ticket ID</th><th>Customer</th><th>Subject</th><th>Priority</th><th>Type</th><th>Status</th><th>Assigned To</th><th>Channel</th><th>Created</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="legend">Priority: <span class="prio urgent">Urgent</span> <span class="prio high">High</span> <span class="prio medium">Medium</span> <span class="prio low">Low</span></div>
+
+<script>
+  // Same source data as data/seed-tickets.json (subset of fields for display).
+  const SEED = [
+    ["Sarah Chen","dashboard not loading properly","Technical","High"],
+    ["David Okafor","payment method was declined","Billing","Medium"],
+    ["Maria Rodriguez","transaction failed but was charged","Refunds","Urgent"],
+    ["James Whitfield","app freezing during login","Technical","High"],
+    ["Amara Nwachukwu","audio issues during calls","Technical","Medium"],
+    ["Liam Fitzgerald","question about my account. Can you call me back?","General","Low"],
+    ["Priya Sharma","refund status for my last payment","Refunds","Medium"],
+    ["Tom Bennett","double charge I noticed on my statement","Refunds","High"],
+    ["Elena Petrova","I need help. Please respond urgently.","General","Low"],
+    ["Marcus Kim","recovering my locked account","Account","Urgent"],
+    ["Sofia Almeida","how to get more storage space","Account","Low"],
+    ["Ethan Brooks","error code 504 appearing on screen","Technical","High"],
+    ["Nora Haddad","app crashes only when I open billing settings","Technical","High"],
+    ["Oliver Grant","updating my profile picture","Account","Low"],
+    ["Zara Ahmed","recovering my locked account","Account","Urgent"],
+    ["Lucas Weber","how notifications and alerts work","General","Low"],
+    ["Fatima Noor","about that thing we discussed last week","General","Low"],
+    ["Aisha Rahman","pricing for student discounts","Billing","Low"],
+    ["Noah Petersen","how to download previous invoices","Billing","Low"],
+    ["Isabella Conti","charged twice but only one order arrived","Refunds","High"],
+    ["Daniel Vega","what happens after cancelling my plan","Billing","Medium"],
+    ["Grace O'Neill","linking multiple accounts together","Account","Low"],
+    ["Youssef El Amrani","is it possible to get a refund? Or exchange it?","Refunds","Low"],
+    ["Chloe Dubois","adding another payment method","Account","Low"],
+    ["Miguel Santos","transaction failed but was charged","Refunds","High"],
+    ["Hana Suzuki","how to update billing information","Billing","Medium"],
+    ["Alex Novak","new plan — not sure it applies to me","Billing","Medium"],
+    ["Ruby Lawson","slow performance problem after update","Technical","Medium"],
+    ["Kenji Tanaka","double charge I noticed on my statement","Refunds","High"],
+    ["Mona Kassis","issue but I can't reproduce it now","Technical","Low"],
+    ["Jack Martin","recovering my locked account","Account","Urgent"],
+    ["Elena Cruz","how to update billing information","Billing","Low"],
+    ["Pavel Ion","cancel subscription and get a refund","Refunds","High"],
+    ["Amelia Stone","access multiple devices","Account","Low"],
+    ["Hassan Ali","if you provide API integration","General","Low"],
+    ["Nina Rasmussen","email about my order I didn't order","Billing","Medium"],
+    ["Omar Farouk","double charge I noticed on my statement","Refunds","High"],
+    ["Julia Novak","error code 504 appearing on screen","Technical","Medium"],
+    ["Diego Fernandez","storage limit but plan grows automatically","Account","Medium"],
+    ["Lea Müller","refund status for my last payment","Refunds","Medium"]
+  ];
+
+  const NAMES = ["Priya R.","Tom B.","Amara N.","Sofia A.","Ethan B.","Zara A.","Miguel S.","Hana S.","Ruby L.","Jack M.","Omar F.","Lea M."];
+  const STATUSES = ["Open","Open","Pending","Escalated","Resolved"];
+  const CHANNELS = ["Email","Web form","Chat","Phone"];
+  const pcls = { Urgent:"urgent", High:"high", Medium:"medium", Low:"low" };
+  const stcls = { Open:"st-open", Pending:"st-pending", Escalated:"st-escalated", Resolved:"st-resolved" };
+
+  const tbody = document.getElementById("rows");
+  SEED.forEach(([name, subj, type, prio], i) => {
+    const id = "TK-" + (1042 + i);
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td style="white-space:nowrap;color:#55606e">#'+id+'</td>' +
+      '<td><b>'+name+'</b></td>' +
+      '<td class="subj">'+subj+'</td>' +
+      '<td><span class="prio '+pcls[prio]+'">'+prio+'</span></td>' +
+      '<td>'+type+'</td>' +
+      '<td class="'+stcls[STATUSES[i%5]]+'">'+STATUSES[i%5]+'</td>' +
+      '<td>'+NAMES[i%NAMES.length]+'</td>' +
+      '<td>'+CHANNELS[i%4]+'</td>' +
+      '<td style="white-space:nowrap;color:#55606e">Sep '+(10+(i%18))+', 09:4'+(i%10)+'</td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById("sOpen").textContent = SEED.filter((_,i)=>STATUSES[i%5]!=="Resolved").length;
+</script>
+</body>
+</html>
