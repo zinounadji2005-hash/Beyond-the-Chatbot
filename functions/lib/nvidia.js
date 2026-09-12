@@ -1,5 +1,8 @@
-const ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions'
+const NVIDIA_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions'
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
+
 export const DEFAULT_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b'
+export const DEFAULT_GROQ_MODEL = 'qwen/qwen3.8-27b'
 
 export const SYSTEM_PROMPT = `You are a support ticket triage engine. Analyze the ticket text and respond with ONLY valid JSON, no markdown formatting, no explanation outside the JSON:
 
@@ -72,19 +75,22 @@ export function parseAnalysis(content) {
   }
 }
 
-export async function analyzeTicket({ rawText, apiKey, model }) {
-  const body = {
-    model: model || DEFAULT_MODEL,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: `Ticket text:\n${rawText}` },
-    ],
-    max_tokens: 800,
-    temperature: 0,
-    chat_template_kwargs: { enable_thinking: false },
-  }
+// provider: 'nvidia' (default) or 'groq'. The JSON contract and parsing are shared;
+// only the endpoint, request body, and key differ.
+export async function analyzeTicket({ rawText, apiKey, model, provider = 'nvidia' }) {
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: `Ticket text:\n${rawText}` },
+  ]
 
-  const res = await fetch(ENDPOINT, {
+  const isGroq = provider === 'groq'
+  const common = { model: model || (isGroq ? DEFAULT_GROQ_MODEL : DEFAULT_MODEL), messages }
+
+  const body = isGroq
+    ? { ...common, temperature: 0, max_tokens: 800 }
+    : { ...common, max_tokens: 800, temperature: 0, chat_template_kwargs: { enable_thinking: false } }
+
+  const res = await fetch(isGroq ? GROQ_ENDPOINT : NVIDIA_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -95,7 +101,7 @@ export async function analyzeTicket({ rawText, apiKey, model }) {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
-    throw new Error(`NVIDIA API ${res.status}: ${detail.slice(0, 500)}`)
+    throw new Error(`${isGroq ? 'Groq' : 'NVIDIA'} API ${res.status}: ${detail.slice(0, 500)}`)
   }
 
   const data = await res.json()

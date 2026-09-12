@@ -1,5 +1,5 @@
 import { getSupabase } from '../lib/supabase.js'
-import { analyzeTicket, DEFAULT_MODEL } from '../lib/nvidia.js'
+import { analyzeTicket, DEFAULT_MODEL, DEFAULT_GROQ_MODEL } from '../lib/nvidia.js'
 import { json, errorResponse, AUTO_SEND_THRESHOLD, UNDO_WINDOW_SECONDS, confidenceBucket, toUtcIso } from '../lib/core.js'
 
 export async function onRequestGet(context) {
@@ -10,9 +10,19 @@ export async function onRequestGet(context) {
     return errorResponse(err.message, 500)
   }
 
-  const apiKey = context.env.NVIDIA_API_KEY
-  if (!apiKey) return errorResponse('NVIDIA_API_KEY missing from environment', 500)
-  const model = context.env.NVIDIA_MODEL || DEFAULT_MODEL
+  const provider = String(context.env.INFERENCE_PROVIDER || 'nvidia').toLowerCase()
+  if (provider !== 'nvidia' && provider !== 'groq') {
+    return errorResponse(`Unsupported INFERENCE_PROVIDER: ${provider}`, 500)
+  }
+
+  const isGroq = provider === 'groq'
+  const apiKey = isGroq ? context.env.GROQ_API_KEY : context.env.NVIDIA_API_KEY
+  if (!apiKey) {
+    return errorResponse(isGroq ? 'GROQ_API_KEY missing from environment' : 'NVIDIA_API_KEY missing from environment', 500)
+  }
+  const model = isGroq
+    ? context.env.GROQ_MODEL || DEFAULT_GROQ_MODEL
+    : context.env.NVIDIA_MODEL || DEFAULT_MODEL
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
@@ -28,7 +38,7 @@ export async function onRequestGet(context) {
 
   let analysis
   try {
-    analysis = await analyzeTicket({ rawText: ticket.raw_text, apiKey, model })
+    analysis = await analyzeTicket({ rawText: ticket.raw_text, apiKey, model, provider })
   } catch (err) {
     analysis = {
       fallback: true,

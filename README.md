@@ -49,8 +49,8 @@ An unparseable or failed model response is treated as `confidence = 0`, `departm
 - **Hosting**: Cloudflare Pages + Pages Functions (single project, no separate server)
 - **Frontend**: React 19 + Tailwind CSS v4 (via `@tailwindcss/vite`), vanilla Vite build
 - **Database**: Supabase (PostgreSQL) — tickets + full decision audit log
-- **AI**: NVIDIA build API — `nvidia/nemotron-3-ultra-550b-a55b` at `https://integrate.api.nvidia.com/v1/chat/completions`
-- **Secrets**: `wrangler pages secret put` → read via `context.env` in Functions
+- **AI**: NVIDIA build API — `nvidia/nemotron-3-ultra-550b-a55b` (default) at `https://integrate.api.nvidia.com/v1/chat/completions`. An optional **Groq** provider (`INFERENCE_PROVIDER=groq`) is supported for faster experimentation — same JSON contract, endpoint `https://api.groq.com/openai/v1/chat/completions`.
+- **Secrets**: `wrangler pages secret put` (direct upload) or dashboard env vars (git integration) → read via `context.env` in Functions
 
 ---
 
@@ -106,6 +106,10 @@ beyond-the-chatbot/
    ```
    NVIDIA_API_KEY=…
    NVIDIA_MODEL=nvidia/nemotron-3-ultra-550b-a55b
+   # Optional: faster experimentation on Groq
+   GROQ_API_KEY=…
+   GROQ_MODEL=qwen/qwen3.8-27b
+   INFERENCE_PROVIDER=nvidia   # or "groq"
    SUPABASE_URL=…
    SUPABASE_SERVICE_KEY=…
    ```
@@ -128,9 +132,10 @@ beyond-the-chatbot/
    npx wrangler pages secret put SUPABASE_URL
    npx wrangler pages secret put SUPABASE_SERVICE_KEY
    ```
-   (`NVIDIA_MODEL` is a plain var, set in `wrangler.toml`.)
-3. `npx wrangler pages deploy dist`
-4. Open the live URL and walk a ticket end-to-end: fetch → infer → act → audit.
+   (`NVIDIA_MODEL` and `GROQ_MODEL` are plain vars, set in `wrangler.toml`.)
+3. To use the faster Groq provider, set `INFERENCE_PROVIDER=groq` and add `GROQ_API_KEY` (dashboard → Settings → Variables and Secrets, or `.dev.vars` locally).
+4. `npx wrangler pages deploy dist`
+5. Open the live URL and walk a ticket end-to-end: fetch → infer → act → audit.
 
 ---
 
