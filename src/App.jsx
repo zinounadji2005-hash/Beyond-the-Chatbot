@@ -129,7 +129,10 @@ export default function App() {
                 customer={toast.customer}
                 expiresAt={toast.expiresAt}
                 onUndo={handleUndo}
-                onExpire={() => setToast(null)}
+                onExpire={() => {
+                  setToast(null)
+                  loadNext()
+                }}
               />
             )}
           </div>
