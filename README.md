@@ -14,7 +14,7 @@ Built for a hackathon challenge; deploys as a single Cloudflare Pages project.
                 ┌────────────────────────────────────────────────────┐
    Browser SPA  │  Cloudflare Pages Functions                       │
    (React SPA)  │                                                    │
-                │   /api/next-ticket   ──►  Gemini API (gemini-3.8-flash) ─┼─► classification
+                │   /api/next-ticket   ──►  Gemini API (gemini-3.5-flash-lite) ─┼─► classification
    ──► one card ──► (fetch + infer + store)                          │      priority / department
    ──► action   ──► /api/submit-action (approve / edit / skip) ──────┼─►       suggested reply
    ──► undo     ──► /api/undo (within 10s window)                    │      confidence 0–100
@@ -49,7 +49,7 @@ An unparseable or failed model response is treated as `confidence = 0`, `departm
 - **Hosting**: Cloudflare Pages + Pages Functions (single project, no separate server)
 - **Frontend**: React 19 + Tailwind CSS v4 (via `@tailwindcss/vite`), vanilla Vite build
 - **Database**: Supabase (PostgreSQL) — tickets + full decision audit log
-- **AI**: Gemini API — `gemini-3.8-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (OpenAI-compatible, `response_format: json_object`; model overridable via `GEMINI_MODEL`)
+- **AI**: Gemini API — `gemini-3.5-flash-lite` (low-cost Flash-Lite tier) at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (OpenAI-compatible, `response_format: json_object`; model overridable via `GEMINI_MODEL`)
 - **Secrets**: `wrangler pages secret put` (direct upload) or dashboard env vars (git integration) → read via `context.env` in Functions
 
 ---
@@ -105,7 +105,7 @@ beyond-the-chatbot/
 4. **Local secrets for Pages Functions** — copy `.dev.vars.example` to `.dev.vars` and fill in:
    ```
    GEMINI_API_KEY=…
-   GEMINI_MODEL=gemini-3.8-flash
+   GEMINI_MODEL=gemini-3.5-flash-lite
    SUPABASE_URL=…
    SUPABASE_SERVICE_KEY=…
    ```

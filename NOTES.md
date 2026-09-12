@@ -3,14 +3,14 @@
 ## AI tools actually used
 
 - **opencode (CLI agent)** — authored the entire codebase in this repo: scaffolding, Pages Functions, React UI, seed tooling, docs. No code was written by hand outside the agent session.
-- **Gemini API** — hosted inference at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (model: `gemini-3.8-flash`).
+- **Gemini API** — hosted inference at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (model: `gemini-3.5-flash-lite`).
 - **zen agent** — mentioned in the challenge brief; not invoked in this session. Agent work was done end-to-end with opencode. (Filing this note honestly.)
 
 ## Key technical decisions
 
 | Decision | Why |
 | --- | --- |
-| **Gemini-only inference (`gemini-3.8-flash`)** | We started on NVIDIA Nemotron-3 (`nvidia/nemotron-3-ultra-550b-a55b`), then trialed Groq (`qwen/qwen3.8-27b`) for speed. The team lead's final call was **Google Gemini** via its OpenAI-compatible endpoint. Same strict JSON contract as before, plus `response_format: { type: 'json_object' }` is now set server-side so the model is *forced* to emit valid JSON — the `parseAnalysis` fallback stays as a safety net. `temperature: 0` kept for reproducibility. Model is overridable via `GEMINI_MODEL`. |
+| **Gemini-only inference (`gemini-3.5-flash-lite`)** | We started on NVIDIA Nemotron-3 (`nvidia/nemotron-3-ultra-550b-a55b`), then trialed Groq (`qwen/qwen3.8-27b`) for speed. The team lead's final call was **Google Gemini** via its OpenAI-compatible endpoint, on the **Flash-Lite tier to keep inference costs minimal** — `gemini-3.5-flash-lite` (measured latency ~1s). Same strict JSON contract as before, plus `response_format: { type: 'json_object' }` is now set server-side so the model is *forced* to emit valid JSON — the `parseAnalysis` fallback stays as a safety net. `temperature: 0` kept for reproducibility. Model is overridable via `GEMINI_MODEL`. |
 | **`response_format: json_object` on Gemini** | The OpenAI-compat endpoint interprets this as `application/json` output — nullable failure test becomes near-impossible by design. |
 | **`temperature: 0`** | Deterministic decisions; a support sort must be reproducible. |
 | **Confidence routing computed server-side** | `next-ticket.js` decides `auto_sent` and persists it in one row — the frontend only renders what the server already decided. The audit log is the single source of truth. |

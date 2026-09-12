@@ -1,6 +1,6 @@
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
 
-export const DEFAULT_MODEL = 'gemini-3.8-flash'
+export const DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 
 export const SYSTEM_PROMPT = `You are a support ticket triage engine. Analyze the ticket text and respond with ONLY valid JSON, no markdown formatting, no explanation outside the JSON:
 
