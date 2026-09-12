@@ -23,11 +23,12 @@ export default function DecisionCard({ data, onApprove, onEdit, onSkip, busy }) 
   const bucket = routing.bucket
   const isAuto = bucket === 'auto'
   const isJudgment = bucket === 'judgment'
+  const isReopened = !!routing.reopened
 
   const [reply, setReply] = useState(decision.ai_suggested_reply)
   const [editing, setEditing] = useState(false)
   const [ticketOpen, setTicketOpen] = useState(decision.ticket_text.length <= TRUNCATE)
-  const [showReply, setShowReply] = useState(isAuto || !isJudgment)
+  const [showReply, setShowReply] = useState(isAuto || !isJudgment || isReopened)
   const textareaRef = useRef(null)
 
   const startEdit = () => {
@@ -51,6 +52,12 @@ export default function DecisionCard({ data, onApprove, onEdit, onSkip, busy }) 
         <ConfidenceBadge value={decision.ai_confidence} bucket={bucket} />
       </div>
 
+      {isReopened && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          You took this ticket back — nothing was sent. It now needs your manual decision.
+        </div>
+      )}
+
       {isAuto && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
           <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -60,7 +67,7 @@ export default function DecisionCard({ data, onApprove, onEdit, onSkip, busy }) 
         </div>
       )}
 
-      {isJudgment && (
+      {isJudgment && !isReopened && (
         <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
           Not confident — this one needs your judgment.
         </div>

@@ -11,11 +11,12 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const inflight = useRef(null)
 
-  const loadNext = useCallback(() => {
-    if (inflight.current) return inflight.current
-    setPhase('loading')
-    setToast(null)
-    inflight.current = fetchNext()
+  const loadNext = useCallback(
+    (keepView = false) => {
+      if (inflight.current) return inflight.current
+      if (!keepView) setPhase('loading')
+      setToast(null)
+      inflight.current = fetchNext()
       .then((res) => {
         if (res.done) {
           setPhase('empty')
@@ -40,7 +41,9 @@ export default function App() {
         inflight.current = null
       })
     return inflight.current
-  }, [])
+  },
+  [],
+)
 
   useEffect(() => {
     loadNext()
@@ -82,7 +85,7 @@ export default function App() {
     Promise.resolve(undoDecision(toast.decisionId))
       .then(() => {
         setToast(null)
-        return loadNext()
+        return loadNext(true)
       })
       .catch((e) => {
         setError(e.message)
@@ -131,7 +134,7 @@ export default function App() {
                 onUndo={handleUndo}
                 onExpire={() => {
                   setToast(null)
-                  loadNext()
+                  loadNext(true)
                 }}
               />
             )}
