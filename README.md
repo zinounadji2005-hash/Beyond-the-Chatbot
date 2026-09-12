@@ -14,7 +14,7 @@ Built for a hackathon challenge; deploys as a single Cloudflare Pages project.
                 ┌────────────────────────────────────────────────────┐
    Browser SPA  │  Cloudflare Pages Functions                       │
    (React SPA)  │                                                    │
-                │   /api/next-ticket   ──►  NVIDIA API (Nemotron-3) ─┼─► classification
+                │   /api/next-ticket   ──►  Groq API (qwen3.8-27b) ──┼─► classification
    ──► one card ──► (fetch + infer + store)                          │      priority / department
    ──► action   ──► /api/submit-action (approve / edit / skip) ──────┼─►       suggested reply
    ──► undo     ──► /api/undo (within 10s window)                    │      confidence 0–100
@@ -26,9 +26,9 @@ Built for a hackathon challenge; deploys as a single Cloudflare Pages project.
                                    · ticket_decisions (full audit log)
 ```
 
-Data flows: **raw ticket → intent inference (NVIDIA) → surfaced decision → human action → audit record.**
+Data flows: **raw ticket → intent inference (Groq) → surfaced decision → human action → audit record.**
 
-The NVIDIA call happens **server-side** in the Functions worker. No API key ever reaches the browser bundle.
+The Groq call happens **server-side** in the Functions worker. No API key ever reaches the browser bundle.
 
 ---
 
@@ -49,7 +49,7 @@ An unparseable or failed model response is treated as `confidence = 0`, `departm
 - **Hosting**: Cloudflare Pages + Pages Functions (single project, no separate server)
 - **Frontend**: React 19 + Tailwind CSS v4 (via `@tailwindcss/vite`), vanilla Vite build
 - **Database**: Supabase (PostgreSQL) — tickets + full decision audit log
-- **AI**: NVIDIA build API — `nvidia/nemotron-3-ultra-550b-a55b` (default) at `https://integrate.api.nvidia.com/v1/chat/completions`. An optional **Groq** provider (`INFERENCE_PROVIDER=groq`) is supported for faster experimentation — same JSON contract, endpoint `https://api.groq.com/openai/v1/chat/completions`.
+- **AI**: Groq API — `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1/chat/completions` (fast LPU inference; model overridable via `GROQ_MODEL`)
 - **Secrets**: `wrangler pages secret put` (direct upload) or dashboard env vars (git integration) → read via `context.env` in Functions
 
 ---
@@ -62,9 +62,9 @@ beyond-the-chatbot/
 │   ├── lib/
 │   │   ├── core.js          # thresholds, JSON helpers
 │   │   ├── supabase.js      # server-side Supabase client
-│   │   └── nvidia.js        # model call + strict JSON parse/fallback
+│   │   └── groq.js          # model call + strict JSON parse/fallback
 │   └── api/
-│       ├── next-ticket.js   # GET: next pending ticket → NVIDIA → store → route
+│       ├── next-ticket.js   # GET: next pending ticket → Groq → store → route
 │       ├── submit-action.js # POST: approve / edit / skip
 │       └── undo.js          # POST: undo auto-sent within window
 ├── src/
@@ -104,12 +104,8 @@ beyond-the-chatbot/
    ```
 4. **Local secrets for Pages Functions** — copy `.dev.vars.example` to `.dev.vars` and fill in:
    ```
-   NVIDIA_API_KEY=…
-   NVIDIA_MODEL=nvidia/nemotron-3-ultra-550b-a55b
-   # Optional: faster experimentation on Groq
    GROQ_API_KEY=…
    GROQ_MODEL=qwen/qwen3.8-27b
-   INFERENCE_PROVIDER=nvidia   # or "groq"
    SUPABASE_URL=…
    SUPABASE_SERVICE_KEY=…
    ```
@@ -128,13 +124,12 @@ beyond-the-chatbot/
 1. `npm run build`
 2. Set production secrets (never commit them):
    ```
-   npx wrangler pages secret put NVIDIA_API_KEY
+   npx wrangler pages secret put GROQ_API_KEY
    npx wrangler pages secret put SUPABASE_URL
    npx wrangler pages secret put SUPABASE_SERVICE_KEY
    ```
-   (`NVIDIA_MODEL` and `GROQ_MODEL` are plain vars, set in `wrangler.toml`.)
-3. To use the faster Groq provider, set `INFERENCE_PROVIDER=groq` and add `GROQ_API_KEY` (dashboard → Settings → Variables and Secrets, or `.dev.vars` locally).
-4. `npx wrangler pages deploy dist`
+   (`GROQ_MODEL` is a plain var, set in `wrangler.toml`.)
+3. `npx wrangler pages deploy dist`
 5. Open the live URL and walk a ticket end-to-end: fetch → infer → act → audit.
 
 ---

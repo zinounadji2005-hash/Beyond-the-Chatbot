@@ -3,18 +3,15 @@
 ## AI tools actually used
 
 - **opencode (CLI agent)** — authored the entire codebase in this repo: scaffolding, Pages Functions, React UI, seed tooling, docs. No code was written by hand outside the agent session.
-- **NVIDIA build API** — hosted inference at `https://integrate.api.nvidia.com/v1/chat/completions`.
+- **Groq API** — hosted inference at `https://api.groq.com/openai/v1/chat/completions` (model: `qwen/qwen3.8-27b`).
 - **zen agent** — mentioned in the challenge brief; not invoked in this session. Agent work was done end-to-end with opencode. (Filing this note honestly.)
 
 ## Key technical decisions
 
 | Decision | Why |
 | --- | --- |
-| **`nvidia/nemotron-3-ultra-550b-a55b` instead of `meta/llama-3.1-70b-instruct`** | Frontier-scale (550B total / 55B active) model available on build.nvidia.com; far stronger at intent classification. Chosen explicitly by the team lead. |
-| **`chat_template_kwargs: { enable_thinking: false }`** | Nemotron-3 is a reasoning model that emits a thinking trace first. Disabling it keeps the response pure JSON — no trace to strip, cheaper tokens, faster. (Enabled thinking would need response-side trace separation.) |
+| **Groq-only inference (`qwen/qwen3.8-27b`)** | We started on NVIDIA Nemotron-3 (`nvidia/nemotron-3-ultra-550b-a55b`), but the live trial tier was extremely slow and would intermittently 503. The team lead decided to move **entirely** to Groq: single-digit-second latency (~0.3–0.5s) on the same strict JSON contract, with one mutable knob (`GROQ_MODEL`). `chat_template_kwargs` (a Nemotron-only knob) was dropped; `temperature: 0` was kept for reproducibility. Model verified present on the account's `/models` endpoint — `llama-3.3-70b-versatile` is decommissioned (Aug 2026) and `llama-4-scout` isn't offered on this account. |
 | **`temperature: 0`** | Deterministic decisions; a support sort must be reproducible. |
-| **Model name is env-overridable** (`NVIDIA_MODEL`) | Lets us hot-swap to another build.nvidia.com instruct model if the trial tier rate-limits the 550B endpoint. |
-| **Optional Groq provider (`INFERENCE_PROVIDER=groq`)** | NVIDIA Nemotron-3 stayed slow on the live trial tier, so we added a second, much faster inference path via Groq (`api.groq.com/openai/v1`). Same JSON contract, same `parseAnalysis`; only endpoint/body/key differ (`functions/lib/nvidia.js`). NVIDIA remains the default (the brief mandates NVIDIA-driven classification); switching is a one-env-var change (`INFERENCE_PROVIDER=groq` + `GROQ_API_KEY`). Default Groq model is `qwen/qwen3.8-27b` — verified present on the account's models endpoint (~535 ms round-trip; the older `llama-3.3-70b-versatile` is decommissioned Aug 2026 and `llama-4-scout` isn't offered on this account), overridable via `GROQ_MODEL`. |
 | **Confidence routing computed server-side** | `next-ticket.js` decides `auto_sent` and persists it in one row — the frontend only renders what the server already decided. The audit log is the single source of truth. |
 | **Auto-send is simulated** | No real SMTP/SendGrid — the "send" is a DB record + UI state. Real sending is a drop-in adapter behind `submit-action.js`. |
 | **10s undo window** | Brief enough to demo urgency, long enough to be meaningful; stored as `undo_window_expires_at`, checked server-side in `undo.js`. |

@@ -3,5 +3,4 @@ compatibility_date = "2025-01-01"
 pages_build_output_dir = "dist"
 
 [vars]
-NVIDIA_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 GROQ_MODEL = "qwen/qwen3.8-27b"
