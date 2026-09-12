@@ -14,7 +14,7 @@ Built for a hackathon challenge; deploys as a single Cloudflare Pages project.
                 ┌────────────────────────────────────────────────────┐
    Browser SPA  │  Cloudflare Pages Functions                       │
    (React SPA)  │                                                    │
-                │   /api/next-ticket   ──►  Groq API (qwen3.8-27b) ──┼─► classification
+                │   /api/next-ticket   ──►  Gemini API (gemini-3.8-flash) ─┼─► classification
    ──► one card ──► (fetch + infer + store)                          │      priority / department
    ──► action   ──► /api/submit-action (approve / edit / skip) ──────┼─►       suggested reply
    ──► undo     ──► /api/undo (within 10s window)                    │      confidence 0–100
@@ -26,9 +26,9 @@ Built for a hackathon challenge; deploys as a single Cloudflare Pages project.
                                    · ticket_decisions (full audit log)
 ```
 
-Data flows: **raw ticket → intent inference (Groq) → surfaced decision → human action → audit record.**
+Data flows: **raw ticket → intent inference (Gemini) → surfaced decision → human action → audit record.**
 
-The Groq call happens **server-side** in the Functions worker. No API key ever reaches the browser bundle.
+The Gemini call happens **server-side** in the Functions worker. No API key ever reaches the browser bundle.
 
 ---
 
@@ -49,7 +49,7 @@ An unparseable or failed model response is treated as `confidence = 0`, `departm
 - **Hosting**: Cloudflare Pages + Pages Functions (single project, no separate server)
 - **Frontend**: React 19 + Tailwind CSS v4 (via `@tailwindcss/vite`), vanilla Vite build
 - **Database**: Supabase (PostgreSQL) — tickets + full decision audit log
-- **AI**: Groq API — `qwen/qwen3.8-27b` at `https://api.groq.com/openai/v1/chat/completions` (fast LPU inference; model overridable via `GROQ_MODEL`)
+- **AI**: Gemini API — `gemini-3.8-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (OpenAI-compatible, `response_format: json_object`; model overridable via `GEMINI_MODEL`)
 - **Secrets**: `wrangler pages secret put` (direct upload) or dashboard env vars (git integration) → read via `context.env` in Functions
 
 ---
@@ -62,9 +62,9 @@ beyond-the-chatbot/
 │   ├── lib/
 │   │   ├── core.js          # thresholds, JSON helpers
 │   │   ├── supabase.js      # server-side Supabase client
-│   │   └── groq.js          # model call + strict JSON parse/fallback
+│   │   └── gemini.js        # model call + strict JSON parse/fallback
 │   └── api/
-│       ├── next-ticket.js   # GET: next pending ticket → Groq → store → route
+│       ├── next-ticket.js   # GET: next pending ticket → Gemini → store → route
 │       ├── submit-action.js # POST: approve / edit / skip
 │       └── undo.js          # POST: undo auto-sent within window
 ├── src/
@@ -104,8 +104,8 @@ beyond-the-chatbot/
    ```
 4. **Local secrets for Pages Functions** — copy `.dev.vars.example` to `.dev.vars` and fill in:
    ```
-   GROQ_API_KEY=…
-   GROQ_MODEL=qwen/qwen3.8-27b
+   GEMINI_API_KEY=…
+   GEMINI_MODEL=gemini-3.8-flash
    SUPABASE_URL=…
    SUPABASE_SERVICE_KEY=…
    ```
@@ -124,11 +124,11 @@ beyond-the-chatbot/
 1. `npm run build`
 2. Set production secrets (never commit them):
    ```
-   npx wrangler pages secret put GROQ_API_KEY
+   npx wrangler pages secret put GEMINI_API_KEY
    npx wrangler pages secret put SUPABASE_URL
    npx wrangler pages secret put SUPABASE_SERVICE_KEY
    ```
-   (`GROQ_MODEL` is a plain var, set in `wrangler.toml`.)
+   (`GEMINI_MODEL` is a plain var, set in `wrangler.toml`.)
 3. `npx wrangler pages deploy dist`
 5. Open the live URL and walk a ticket end-to-end: fetch → infer → act → audit.
 

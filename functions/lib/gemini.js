@@ -1,6 +1,6 @@
-const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
 
-export const DEFAULT_MODEL = 'qwen/qwen3.8-27b'
+export const DEFAULT_MODEL = 'gemini-3.8-flash'
 
 export const SYSTEM_PROMPT = `You are a support ticket triage engine. Analyze the ticket text and respond with ONLY valid JSON, no markdown formatting, no explanation outside the JSON:
 
@@ -82,9 +82,10 @@ export async function analyzeTicket({ rawText, apiKey, model }) {
     ],
     temperature: 0,
     max_tokens: 800,
+    response_format: { type: 'json_object' },
   }
 
-  const res = await fetch(GROQ_ENDPOINT, {
+  const res = await fetch(GEMINI_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -95,7 +96,7 @@ export async function analyzeTicket({ rawText, apiKey, model }) {
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
-    throw new Error(`Groq API ${res.status}: ${detail.slice(0, 500)}`)
+    throw new Error(`Gemini API ${res.status}: ${detail.slice(0, 500)}`)
   }
 
   const data = await res.json()

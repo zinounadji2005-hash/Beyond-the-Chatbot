@@ -3,14 +3,15 @@
 ## AI tools actually used
 
 - **opencode (CLI agent)** — authored the entire codebase in this repo: scaffolding, Pages Functions, React UI, seed tooling, docs. No code was written by hand outside the agent session.
-- **Groq API** — hosted inference at `https://api.groq.com/openai/v1/chat/completions` (model: `qwen/qwen3.8-27b`).
+- **Gemini API** — hosted inference at `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (model: `gemini-3.8-flash`).
 - **zen agent** — mentioned in the challenge brief; not invoked in this session. Agent work was done end-to-end with opencode. (Filing this note honestly.)
 
 ## Key technical decisions
 
 | Decision | Why |
 | --- | --- |
-| **Groq-only inference (`qwen/qwen3.8-27b`)** | We started on NVIDIA Nemotron-3 (`nvidia/nemotron-3-ultra-550b-a55b`), but the live trial tier was extremely slow and would intermittently 503. The team lead decided to move **entirely** to Groq: single-digit-second latency (~0.3–0.5s) on the same strict JSON contract, with one mutable knob (`GROQ_MODEL`). `chat_template_kwargs` (a Nemotron-only knob) was dropped; `temperature: 0` was kept for reproducibility. Model verified present on the account's `/models` endpoint — `llama-3.3-70b-versatile` is decommissioned (Aug 2026) and `llama-4-scout` isn't offered on this account. |
+| **Gemini-only inference (`gemini-3.8-flash`)** | We started on NVIDIA Nemotron-3 (`nvidia/nemotron-3-ultra-550b-a55b`), then trialed Groq (`qwen/qwen3.8-27b`) for speed. The team lead's final call was **Google Gemini** via its OpenAI-compatible endpoint. Same strict JSON contract as before, plus `response_format: { type: 'json_object' }` is now set server-side so the model is *forced* to emit valid JSON — the `parseAnalysis` fallback stays as a safety net. `temperature: 0` kept for reproducibility. Model is overridable via `GEMINI_MODEL`. |
+| **`response_format: json_object` on Gemini** | The OpenAI-compat endpoint interprets this as `application/json` output — nullable failure test becomes near-impossible by design. |
 | **`temperature: 0`** | Deterministic decisions; a support sort must be reproducible. |
 | **Confidence routing computed server-side** | `next-ticket.js` decides `auto_sent` and persists it in one row — the frontend only renders what the server already decided. The audit log is the single source of truth. |
 | **Auto-send is simulated** | No real SMTP/SendGrid — the "send" is a DB record + UI state. Real sending is a drop-in adapter behind `submit-action.js`. |

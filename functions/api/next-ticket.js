@@ -1,5 +1,5 @@
 import { getSupabase } from '../lib/supabase.js'
-import { analyzeTicket, DEFAULT_MODEL } from '../lib/groq.js'
+import { analyzeTicket, DEFAULT_MODEL } from '../lib/gemini.js'
 import { json, errorResponse, AUTO_SEND_THRESHOLD, UNDO_WINDOW_SECONDS, confidenceBucket, toUtcIso } from '../lib/core.js'
 
 export async function onRequestGet(context) {
@@ -10,9 +10,9 @@ export async function onRequestGet(context) {
     return errorResponse(err.message, 500)
   }
 
-  const apiKey = context.env.GROQ_API_KEY
-  if (!apiKey) return errorResponse('GROQ_API_KEY missing from environment', 500)
-  const model = context.env.GROQ_MODEL || DEFAULT_MODEL
+  const apiKey = context.env.GEMINI_API_KEY
+  if (!apiKey) return errorResponse('GEMINI_API_KEY missing from environment', 500)
+  const model = context.env.GEMINI_MODEL || DEFAULT_MODEL
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
